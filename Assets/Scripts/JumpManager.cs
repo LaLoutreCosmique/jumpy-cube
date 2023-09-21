@@ -6,7 +6,8 @@ using UnityEngine.Serialization;
 public class JumpManager : MonoBehaviour
 {
     [SerializeField] CameraManager cam;
-    [SerializeField] LayerMask platformLayerMask;
+    [SerializeField] LayerMask platformLayerMask; 
+    [SerializeField] DirectionalArrow directionalArrow;
     
     Rigidbody2D _rb2d;
     BoxCollider2D _collider2D;
@@ -17,26 +18,17 @@ public class JumpManager : MonoBehaviour
     [SerializeField] float instantJumpForce;
     [SerializeField] float aerialSlowMotionTimeScale;
 
-    const float JumpCooldown = 0.5f;
+    const float JumpCooldown = 0.05f;
     
-    public JumpDirections currentJumpDirection;
     float _currentJumpForce, _currentJumpCooldown;
     Vector2 _jumpVector;
     public JumpStyles currentJumpStyle;
-    bool _onCooldown, _isGrounded, _inAir, _haveAerial, _instantJumpPressed;
+    bool _onCooldown, _isGrounded, _haveAerial, _instantJumpPressed, _lockedCharge;
     
     // Animation variables
     static readonly int GroundChargeAnim = Animator.StringToHash("groundCharge");
     static readonly int FloatAnim = Animator.StringToHash("Floating");
     static readonly int LandingAnim = Animator.StringToHash("Landing");
-
-    public enum JumpDirections
-    {
-        Up,
-        Down,
-        Left,
-        Right
-    }
 
     public enum JumpStyles
     {
@@ -51,7 +43,6 @@ public class JumpManager : MonoBehaviour
         _rb2d = GetComponent<Rigidbody2D>();
         _collider2D = GetComponent<BoxCollider2D>();
         _animator = GetComponent<Animator>();
-        currentJumpDirection = JumpDirections.Up;
         currentJumpStyle = JumpStyles.GroundJump;
         _haveAerial = true;
     }
@@ -80,12 +71,11 @@ public class JumpManager : MonoBehaviour
         
         
         // ON THE GROUND
-        if (_isGrounded && !_onCooldown)
+        if (_isGrounded)
         {
             // LANDING
-            if (_inAir)
+            if (currentJumpStyle != JumpStyles.GroundJump)
             {
-                _inAir = false;
                 _haveAerial = true;
                 // Reset jump to ground
                 currentJumpStyle = JumpStyles.GroundJump;
@@ -94,24 +84,45 @@ public class JumpManager : MonoBehaviour
                 // Landing animation
                 _animator.SetBool(FloatAnim, false); // reset floating anim
                 _animator.SetTrigger(LandingAnim);
-                
                 // Remove slow motion effect
                 ResetTimeScale();
+                
+                directionalArrow.Active(false);
             }
         }
         // IN AIR
-        else if (_inAir)
+        else if (!_isGrounded && !_onCooldown)
         {
             if (_rb2d.velocity.y <= 4f)
+            {
                 _animator.SetBool(FloatAnim, true);
+                _animator.ResetTrigger(LandingAnim);
+            }
+
+            if (_haveAerial && currentJumpStyle != JumpStyles.AerialJump)
+            {
+                Debug.Log("PASOUC");
+
+                if (_currentJumpForce > 0f)
+                {
+                    _currentJumpForce = 0f;
+                    _lockedCharge = true; // False on key released
+                    _animator.SetBool(GroundChargeAnim, false);
+                }
+
+                currentJumpStyle = JumpStyles.AerialJump;
+            }
         }
-        
+
+        // ---- PRESS ---- //
         if (Input.GetKeyDown(KeyCode.Space))
         {
             if (currentJumpStyle == JumpStyles.GroundJump)
             {
                 // Animate ground charging
                 _animator.SetBool(GroundChargeAnim, true);
+
+                directionalArrow.Active(false);
             }
             
             // START CHARGING AERIAL JUMP
@@ -126,18 +137,21 @@ public class JumpManager : MonoBehaviour
                 
                 // Animate aerial charging
                 //_animator.SetBool(AerialChargeAnim, true);
+                
+                directionalArrow.Active(true);
             }
             
             // DO INSTANT JUMP
             else if (currentJumpStyle == JumpStyles.InstantJump && !_onCooldown)
             {
                 _currentJumpForce = instantJumpForce;
-                currentJumpDirection = JumpDirections.Up;
                 Jump();
                 _instantJumpPressed = true;
             }
         }
-        if (Input.GetKey(KeyCode.Space))
+        
+        // ---- CHARGE ---- //
+        if (Input.GetKey(KeyCode.Space) && !_lockedCharge)
         {
             // CHARGE JUMP
             if (currentJumpStyle != JumpStyles.GroundJump &&
@@ -145,18 +159,19 @@ public class JumpManager : MonoBehaviour
                 _instantJumpPressed ||
                 _onCooldown) return;
             
-            Debug.Log(_currentJumpForce);
-            
             _currentJumpForce += Time.deltaTime * jumpChargeSpeed;
             // Limit jump force
             if (_currentJumpForce > maxJumpForce) _currentJumpForce = maxJumpForce;
         }
+        
+        // ---- RELEASE ---- //
         if (Input.GetKeyUp(KeyCode.Space))
         {
             if (_instantJumpPressed)
-            {
                 _instantJumpPressed = false;
-            }
+
+            if (_lockedCharge)
+                _lockedCharge = false;
             
             // JUMP
             switch (currentJumpStyle)
@@ -164,23 +179,24 @@ public class JumpManager : MonoBehaviour
                 case JumpStyles.Null:
                     break;
                 
+                // GROUND //
                 case JumpStyles.GroundJump:
                     if (!_isGrounded)
                     {
                         _currentJumpForce = 0f;
                         return;
                     }
-                    
-                    currentJumpDirection = JumpDirections.Up;
-                    _inAir = true;
-                    
+
                     // Animate ground jump
                     _animator.SetBool(GroundChargeAnim, false);
+                    
+                    Jump();
                     
                     // Set next jump style
                     currentJumpStyle = JumpStyles.AerialJump;
                     break;
                 
+                // AERIAL //
                 case JumpStyles.AerialJump:
                     if (_isGrounded)
                     {
@@ -189,18 +205,21 @@ public class JumpManager : MonoBehaviour
                     }
                     
                     // Multiply jump force
-                    _currentJumpForce *= 2;
+                    _currentJumpForce *= 5;
+                    if (_currentJumpForce > 40)
+                        _currentJumpForce = 40;
+                    Debug.Log(_currentJumpForce);
                     
                     // Remove slow motion effect
                     ResetTimeScale();
-                    
-                    // Set direction to jump
-                    currentJumpDirection = JumpDirections.Right;
+
+                    Jump();
                     
                     // Set next jump style
                     currentJumpStyle = JumpStyles.Null;
 
                     _haveAerial = false;
+                    directionalArrow.Active(false);
                     break;
                 
                 case JumpStyles.InstantJump:
@@ -210,33 +229,18 @@ public class JumpManager : MonoBehaviour
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            
-            Jump();
         }
     }
 
     void SetJumpVector()
     {
-        if (_currentJumpForce < 4f)
-            _currentJumpForce = 4f;
+        if (_currentJumpForce < 6f)
+            _currentJumpForce = 6f;
         
-        switch (currentJumpDirection)
-        {
-            case JumpDirections.Up:
-                _jumpVector.y = _currentJumpForce;
-                break;
-            case JumpDirections.Down:
-                _jumpVector.y = -_currentJumpForce;
-                break;
-            case JumpDirections.Right:
-                _jumpVector.x = _currentJumpForce;
-                break;
-            case JumpDirections.Left:
-                _jumpVector.x = -_currentJumpForce;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+        if (currentJumpStyle == JumpStyles.GroundJump){}
+            _jumpVector = new Vector2(0, _currentJumpForce);
+        if (currentJumpStyle == JumpStyles.AerialJump)
+            _jumpVector = directionalArrow.rotation.normalized * _currentJumpForce;
     }
 
     void Jump()
@@ -251,7 +255,7 @@ public class JumpManager : MonoBehaviour
     bool IsGrounded()
     {
         var bounds = _collider2D.bounds;
-        float extraHeightTest = .1f;
+        const float extraHeightTest = .1f;
         RaycastHit2D raycastHit = Physics2D.BoxCast(
             bounds.center, 
             bounds.size, 
