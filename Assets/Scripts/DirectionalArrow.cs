@@ -10,7 +10,7 @@ public class DirectionalArrow : MonoBehaviour
 
     public Vector3 rotation;
 
-    bool _isActive = false;
+    bool _isActive;
 
     void Awake()
     {

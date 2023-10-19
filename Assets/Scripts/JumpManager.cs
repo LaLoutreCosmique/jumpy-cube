@@ -1,11 +1,11 @@
 using System;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 
 public class JumpManager : MonoBehaviour
 {
-    [SerializeField] CameraManager cam;
+    public CameraManager cam;
     [SerializeField] LayerMask platformLayerMask; 
     [SerializeField] DirectionalArrow directionalArrow;
     
@@ -19,11 +19,14 @@ public class JumpManager : MonoBehaviour
     [SerializeField] float aerialSlowMotionTimeScale;
 
     const float JumpCooldown = 0.05f;
-    
-    float _currentJumpForce, _currentJumpCooldown;
+
+    public float _currentJumpForce;
+    float _currentJumpCooldown;
     Vector2 _jumpVector;
     public JumpStyles currentJumpStyle;
-    bool _onCooldown, _isGrounded, _haveAerial, _instantJumpPressed, _lockedCharge;
+    bool _onCooldown, _haveAerial, _instantJumpPressed, _lockedCharge;
+    public bool _isGrounded, _lockedGroundRecovery;
+    [CanBeNull] InstantOrb _instantOrb;
     
     // Animation variables
     static readonly int GroundChargeAnim = Animator.StringToHash("groundCharge");
@@ -68,49 +71,55 @@ public class JumpManager : MonoBehaviour
         }
         else
             _onCooldown = false;
-        
-        
-        // ON THE GROUND
-        if (_isGrounded)
-        {
-            // LANDING
-            if (currentJumpStyle != JumpStyles.GroundJump)
-            {
-                _haveAerial = true;
-                // Reset jump to ground
-                currentJumpStyle = JumpStyles.GroundJump;
-                _currentJumpForce = 0f;
-                
-                // Landing animation
-                _animator.SetBool(FloatAnim, false); // reset floating anim
-                _animator.SetTrigger(LandingAnim);
-                // Remove slow motion effect
-                ResetTimeScale();
-                
-                directionalArrow.Active(false);
-            }
-        }
-        // IN AIR
-        else if (!_isGrounded && !_onCooldown)
-        {
-            if (_rb2d.velocity.y <= 4f)
-            {
-                _animator.SetBool(FloatAnim, true);
-                _animator.ResetTrigger(LandingAnim);
-            }
 
-            if (_haveAerial && currentJumpStyle != JumpStyles.AerialJump)
-            {
-                Debug.Log("PASOUC");
 
-                if (_currentJumpForce > 0f)
+        switch (_isGrounded)
+        {
+            // ON THE GROUND
+            case true:
+            {
+                // LANDING
+                if (currentJumpStyle != JumpStyles.GroundJump && !_lockedGroundRecovery)
                 {
+                    _haveAerial = true;
+                    // Reset jump to ground
+                    currentJumpStyle = JumpStyles.GroundJump;
                     _currentJumpForce = 0f;
-                    _lockedCharge = true; // False on key released
-                    _animator.SetBool(GroundChargeAnim, false);
+                
+                    // Landing animation
+                    _animator.SetBool(FloatAnim, false); // reset floating anim
+                    _animator.SetTrigger(LandingAnim);
+                    // Remove slow motion effect
+                    ResetTimeScale();
+                
+                    directionalArrow.Active(false);
                 }
 
-                currentJumpStyle = JumpStyles.AerialJump;
+                break;
+            }
+            // IN AIR
+            case false when !_onCooldown:
+            {
+                if (_rb2d.velocity.y <= 4f)
+                {
+                    _animator.SetBool(FloatAnim, true);
+                    _animator.ResetTrigger(LandingAnim);
+                }
+
+                if (_haveAerial && currentJumpStyle != JumpStyles.AerialJump && currentJumpStyle != JumpStyles.InstantJump)
+                {
+                    if (_currentJumpForce > 0f)
+                    {
+                        //_currentJumpForce = 0f;
+                        _lockedCharge = true; // False on key released
+                        _animator.SetBool(GroundChargeAnim, false);
+                    }
+
+                    currentJumpStyle = JumpStyles.AerialJump;
+                    _currentJumpForce = 0f;
+                }
+
+                break;
             }
         }
 
@@ -125,7 +134,7 @@ public class JumpManager : MonoBehaviour
                 directionalArrow.Active(false);
             }
             
-            // START CHARGING AERIAL JUMP
+            // START SLOW-MO & CAM ZOOMING ON AERIAL CHARGE
             else if (currentJumpStyle == JumpStyles.AerialJump)
             {
                 // Slow motion when charging aerial jump
@@ -139,7 +148,7 @@ public class JumpManager : MonoBehaviour
                 //_animator.SetBool(AerialChargeAnim, true);
                 
                 directionalArrow.Active(true);
-            }
+            }  
             
             // DO INSTANT JUMP
             else if (currentJumpStyle == JumpStyles.InstantJump && !_onCooldown)
@@ -147,18 +156,20 @@ public class JumpManager : MonoBehaviour
                 _currentJumpForce = instantJumpForce;
                 Jump();
                 _instantJumpPressed = true;
+                currentJumpStyle = JumpStyles.AerialJump;
+                _instantOrb.StartCooldown();
             }
         }
         
         // ---- CHARGE ---- //
         if (Input.GetKey(KeyCode.Space) && !_lockedCharge)
         {
-            // CHARGE JUMP
+            // START CHARGING JUMP
             if (currentJumpStyle != JumpStyles.GroundJump &&
-                currentJumpStyle != JumpStyles.AerialJump ||
-                _instantJumpPressed ||
+                currentJumpStyle != JumpStyles.AerialJump &&
+                _instantJumpPressed &&
                 _onCooldown) return;
-            
+
             _currentJumpForce += Time.deltaTime * jumpChargeSpeed;
             // Limit jump force
             if (_currentJumpForce > maxJumpForce) _currentJumpForce = maxJumpForce;
@@ -167,19 +178,16 @@ public class JumpManager : MonoBehaviour
         // ---- RELEASE ---- //
         if (Input.GetKeyUp(KeyCode.Space))
         {
-            if (_instantJumpPressed)
-                _instantJumpPressed = false;
-
             if (_lockedCharge)
                 _lockedCharge = false;
-            
+
             // JUMP
             switch (currentJumpStyle)
             {
                 case JumpStyles.Null:
                     break;
                 
-                // GROUND //
+                // GROUND JUMP //
                 case JumpStyles.GroundJump:
                     if (!_isGrounded)
                     {
@@ -196,19 +204,21 @@ public class JumpManager : MonoBehaviour
                     currentJumpStyle = JumpStyles.AerialJump;
                     break;
                 
-                // AERIAL //
+                // AERIAL JUMP //
                 case JumpStyles.AerialJump:
                     if (_isGrounded)
                     {
                         _currentJumpForce = 0f;
                         return;
                     }
-                    
+
+                    if (_instantJumpPressed)
+                        break;
+
                     // Multiply jump force
                     _currentJumpForce *= 5;
                     if (_currentJumpForce > 40)
                         _currentJumpForce = 40;
-                    Debug.Log(_currentJumpForce);
                     
                     // Remove slow motion effect
                     ResetTimeScale();
@@ -228,6 +238,12 @@ public class JumpManager : MonoBehaviour
                 
                 default:
                     throw new ArgumentOutOfRangeException();
+            }
+
+            if (_instantJumpPressed)
+            {
+                _currentJumpForce = 0f;
+                _instantJumpPressed = false;
             }
         }
     }
@@ -255,7 +271,7 @@ public class JumpManager : MonoBehaviour
     bool IsGrounded()
     {
         var bounds = _collider2D.bounds;
-        const float extraHeightTest = .1f;
+        const float extraHeightTest = .05f;
         RaycastHit2D raycastHit = Physics2D.BoxCast(
             bounds.center, 
             bounds.size, 
@@ -276,9 +292,12 @@ public class JumpManager : MonoBehaviour
         cam.zoom = false;
     }
 
-    public void GetInstantJump()
+    public void GetInstantJump(InstantOrb orb)
     {
-        currentJumpStyle = JumpStyles.InstantJump;
+        _instantOrb = orb;
+        
+        if (_currentJumpForce == 0f)
+            currentJumpStyle = JumpStyles.InstantJump;
     }
 
     public void RemoveInstantJump()

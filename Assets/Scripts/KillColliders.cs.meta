@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8a025952e3fd6c948ade2405ded1f7c5
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - cam: {fileID: 4165989544045344108, guid: 2d6e8728438abd64489b425959748543, type: 3}
+  - bpCube: {fileID: 7322883818218226059, guid: 39bdda13b3ea34a40925dbfc991d9762, type: 3}
+  - cube: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

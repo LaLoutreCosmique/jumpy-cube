@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CameraManager : MonoBehaviour
 {
-    [SerializeField] GameObject cube;
+    public GameObject cube;
     Camera _cam;
 
     [SerializeField] float zoomSpeed;
@@ -11,8 +11,8 @@ public class CameraManager : MonoBehaviour
     
     Vector3 _posOrigin;
     float _zoomSizeOrigin;
-    public bool zoom = false; // SMOOTH ZOOM TO THE CUBE (DURING AERIAL CHARGE)
-    public bool zoomOut = false;
+    public bool zoom; // SMOOTH ZOOM TO THE CUBE (DURING AERIAL CHARGE)
+    public bool zoomOut;
 
     void Awake()
     {
@@ -23,9 +23,11 @@ public class CameraManager : MonoBehaviour
 
     void Update()
     {
+        //Debug.Log(cube.transform.position);
+        
         if (zoomOut)
         {
-            if (_cam.orthographicSize >= _zoomSizeOrigin - 0.2)
+            if (_cam.orthographicSize >= _zoomSizeOrigin - 0.01f)
                 zoomOut = false;
             
             zoom = false;
@@ -34,7 +36,7 @@ public class CameraManager : MonoBehaviour
         }
         if (zoom)
         {
-            if (_cam.orthographicSize <= zoomSize + 0.2f)
+            if (_cam.orthographicSize <= zoomSize + 0.1f)
                 zoom = false;
             
             transform.position = Vector3.Lerp(transform.position, cube.transform.position, Time.deltaTime * zoomSpeed);
