@@ -217,12 +217,13 @@ public class JumpManager : MonoBehaviour
 
                     // Multiply jump force
                     _currentJumpForce *= 5;
-                    if (_currentJumpForce > 40)
-                        _currentJumpForce = 40;
+                    if (_currentJumpForce > maxJumpForce)
+                        _currentJumpForce = maxJumpForce;
                     
                     // Remove slow motion effect
                     ResetTimeScale();
 
+                    _rb2d.velocity /= 2;
                     Jump();
                     
                     // Set next jump style

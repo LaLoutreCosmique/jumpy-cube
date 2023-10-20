@@ -56,6 +56,9 @@ public class PlayerManager : MonoBehaviour
 
         if (orbsManager) orbsManager.UpdateCubeObject(playedCube.transform);
     }
-    
+
     void StartCursorCharge()
+    {
+        return;
+    }
 }
