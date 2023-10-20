@@ -1,7 +1,6 @@
 using System;
 using JetBrains.Annotations;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class JumpManager : MonoBehaviour
 {
@@ -16,7 +15,6 @@ public class JumpManager : MonoBehaviour
     [SerializeField] float jumpChargeSpeed;
     [SerializeField] float maxJumpForce;
     [SerializeField] float instantJumpForce;
-    [SerializeField] float aerialSlowMotionTimeScale;
 
     const float JumpCooldown = 0.05f;
 
@@ -52,15 +50,6 @@ public class JumpManager : MonoBehaviour
 
     void Update()
     {
-        // RESET LEVEL
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            // Remove slow motion effect
-            ResetTimeScale();
-            // Reload scene
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        }
-            
         _isGrounded = IsGrounded();
         
         // JUMP COOLDOWN
@@ -71,7 +60,6 @@ public class JumpManager : MonoBehaviour
         }
         else
             _onCooldown = false;
-
 
         switch (_isGrounded)
         {
@@ -90,7 +78,7 @@ public class JumpManager : MonoBehaviour
                     _animator.SetBool(FloatAnim, false); // reset floating anim
                     _animator.SetTrigger(LandingAnim);
                     // Remove slow motion effect
-                    ResetTimeScale();
+                    StopAerialChargeEffect();
                 
                     directionalArrow.Active(false);
                 }
@@ -138,8 +126,7 @@ public class JumpManager : MonoBehaviour
             else if (currentJumpStyle == JumpStyles.AerialJump)
             {
                 // Slow motion when charging aerial jump
-                Time.timeScale = aerialSlowMotionTimeScale;
-                Time.fixedDeltaTime = 0.02f * Time.timeScale;
+                GameManager.Instance.StartSlowMotion();
                 
                 // Camera zooming to the cube
                 cam.zoom = true;
@@ -221,7 +208,7 @@ public class JumpManager : MonoBehaviour
                         _currentJumpForce = maxJumpForce;
                     
                     // Remove slow motion effect
-                    ResetTimeScale();
+                    StopAerialChargeEffect();
 
                     _rb2d.velocity /= 2;
                     Jump();
@@ -234,7 +221,7 @@ public class JumpManager : MonoBehaviour
                     break;
                 
                 case JumpStyles.InstantJump:
-                    ResetTimeScale();
+                    StopAerialChargeEffect();
                     break;
                 
                 default:
@@ -248,16 +235,60 @@ public class JumpManager : MonoBehaviour
             }
         }
     }
+    
+    public void KeyPressed()
+    {
+        switch (currentJumpStyle)
+        {
+            // Do Nothing
+            case JumpStyles.Null:
+                break;
+            
+            // Start ground charge
+            case JumpStyles.GroundJump:
+                break;
+            
+            // Start aerial charge
+            case JumpStyles.AerialJump:
+                break;
+            
+            // Do instant jump
+            case JumpStyles.InstantJump:
+                break;
+        }
+    }
+
+    public void KeyReleased()
+    {
+        switch (currentJumpStyle)
+        {
+            // Do Nothing
+            case JumpStyles.Null:
+                break;
+            
+            // Do ground jump
+            case JumpStyles.GroundJump:
+                break;
+            
+            // Do aerial jump
+            case JumpStyles.AerialJump:
+                break;
+            
+            // Do nothing
+            case JumpStyles.InstantJump:
+                break;
+        }
+    }
 
     void SetJumpVector()
     {
-        if (_currentJumpForce < 6f)
-            _currentJumpForce = 6f;
+       if (_currentJumpForce < 6f) 
+           _currentJumpForce = 6f;
         
-        if (currentJumpStyle == JumpStyles.GroundJump){}
-            _jumpVector = new Vector2(0, _currentJumpForce);
-        if (currentJumpStyle == JumpStyles.AerialJump)
-            _jumpVector = directionalArrow.rotation.normalized * _currentJumpForce;
+       if (currentJumpStyle == JumpStyles.GroundJump){}
+       _jumpVector = new Vector2(0, _currentJumpForce);
+       if (currentJumpStyle == JumpStyles.AerialJump)
+           _jumpVector = directionalArrow.rotation.normalized * _currentJumpForce;
     }
 
     void Jump()
@@ -284,11 +315,10 @@ public class JumpManager : MonoBehaviour
         return raycastHit.collider != null;
     }
 
-    void ResetTimeScale()
+    public void StopAerialChargeEffect()
     {
         // Remove slow motion effect
-        Time.timeScale = 1;
-        Time.fixedDeltaTime = 0.02f;
+        GameManager.Instance.StopSlowMotion();
         cam.zoomOut = true;
         cam.zoom = false;
     }

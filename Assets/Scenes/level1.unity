@@ -494,6 +494,51 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &928508951
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 928508953}
+  - component: {fileID: 928508952}
+  m_Layer: 0
+  m_Name: Game Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &928508952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928508951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e24f792d5caf14752ab7f0fea847a2d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  slowMotionTimeScale: 0.3
+--- !u!4 &928508953
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928508951}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.19442, y: -3.2874067, z: -0.041501045}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &931286313
 GameObject:
   m_ObjectHideFlags: 0
@@ -504,6 +549,7 @@ GameObject:
   m_Component:
   - component: {fileID: 931286314}
   - component: {fileID: 931286315}
+  - component: {fileID: 931286316}
   m_Layer: 0
   m_Name: Player Manager
   m_TagString: Untagged
@@ -543,6 +589,20 @@ MonoBehaviour:
   cam: {fileID: 351069633}
   orbsManager: {fileID: 1242446258}
   deathParticle: {fileID: 1906127019}
+--- !u!114 &931286316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 931286313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4a481541d264784f97b75bd2b594d73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cursorTexture: {fileID: 2800000, guid: bf65ed3cfb38947fbad501535c691558, type: 3}
+  cube: {fileID: 1725040951}
 --- !u!1 &962703566
 GameObject:
   m_ObjectHideFlags: 0
@@ -882,6 +942,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 4351053088700157742, guid: 39bdda13b3ea34a40925dbfc991d9762, type: 3}
   m_PrefabInstance: {fileID: 4351053089122600472}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1725040951 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4351053088700157728, guid: 39bdda13b3ea34a40925dbfc991d9762, type: 3}
+  m_PrefabInstance: {fileID: 4351053089122600472}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1725040950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3adad40e57843434f989a8cf171b1403, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!198 &1906127019 stripped
 ParticleSystem:
   m_CorrespondingSourceObject: {fileID: 3036727567122102547, guid: 485685fec543410449941898df9e438f, type: 3}

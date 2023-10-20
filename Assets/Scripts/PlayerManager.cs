@@ -11,7 +11,7 @@ public class PlayerManager : MonoBehaviour
     
     [SerializeField] CameraManager cam;
     [SerializeField] OrbsManager orbsManager;
-    [SerializeField] InputManager inputManager;
+    InputManager _inputManager;
     
     [SerializeField] ParticleSystem deathParticle;
 
@@ -27,7 +27,7 @@ public class PlayerManager : MonoBehaviour
             Instance = this;
 
         _cubeSpawnPos = playedCube.transform.position;
-        inputManager = GetComponent<InputManager>();
+        _inputManager = GetComponent<InputManager>();
     }
 
     void Start()
@@ -48,17 +48,13 @@ public class PlayerManager : MonoBehaviour
     IEnumerator InstantiateNewPlayer(float delay)
     {
         yield return new WaitForSeconds(delay);
-        GameObject newPlayer = Instantiate(bpPlayer, new Vector3(), quaternion.identity);
-        playedCube = newPlayer.GetComponentInChildren<JumpManager>().gameObject;
+        GameObject newCube = Instantiate(bpPlayer, new Vector3(), quaternion.identity);
+        playedCube = newCube.GetComponentInChildren<JumpManager>().gameObject;
         playedCube.transform.position = _cubeSpawnPos;
         cam.cube = playedCube;
+        _inputManager.cube = playedCube.GetComponent<JumpManager>();
         playedCube.GetComponent<JumpManager>().cam = cam;
 
         if (orbsManager) orbsManager.UpdateCubeObject(playedCube.transform);
-    }
-
-    void StartCursorCharge()
-    {
-        return;
     }
 }
